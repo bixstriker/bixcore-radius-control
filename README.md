@@ -32,8 +32,8 @@ multi-tenant, zero-config product. Before using it, review and replace example
 defaults / source constants and update both ends of restricted SSH helpers.
 
 See [Architecture and configuration](docs/CONFIGURATION.md) and
-[Security and release notes](docs/SECURITY.md). `compose.demo.yaml` can be
-used for an offline demonstration; `compose.v1.0.1.release.yaml` is an advanced
+[Security and release notes](docs/SECURITY.md). `compose.demo.yaml` is supplied
+for a localhost-only synthetic-data demonstration; `compose.v1.0.1.release.yaml` is an advanced
 deployment **example**, not a safe direct production command.
 
 ## Prerequisites
@@ -75,8 +75,18 @@ distributed. Git history begins from a new root commit.
 Never commit credentials or take an example `authorized_keys` entry
 without understanding the source-IP, forced-command and host-key restrictions.
 
+## Quick start
+
+For a localhost-only **synthetic data** demo, see [Quickstart](docs/QUICKSTART.md).
+See [Configuration](docs/CONFIGURATION.md) before adapting the example server
+or OPNsense helpers to any real network. The demo is not an automatic installer.
+
 ## License
 
-**No open-source license has been selected yet.** Public visibility does not
-grant redistribution or modification rights. A license should be chosen and
-added before inviting third-party contributions.
+Copyright (c) 2026 **bixstriker**. BiXCore's source code is licensed under the
+[MIT License](LICENSE). Dependencies retain their separate licenses and
+notices; see [third-party inventory](THIRD_PARTY_NOTICES.md).
+
+Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
+Security reports: [SECURITY.md](SECURITY.md).
+Public changelog: [CHANGELOG.md](CHANGELOG.md).
