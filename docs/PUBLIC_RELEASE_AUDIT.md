@@ -36,8 +36,9 @@ Sample documentation IPs and `example.test` are non-routable and deliberately
 do not point to a real system. Tests use mock or synthetic data; they do not
 constitute an end-to-end field test of another installation.
 
-A public source release does not imply permission to use it commercially or
-redistribute it. No third-party software license has been selected by the owner.
+The first public snapshot had no project license; the current public release is
+licensed under MIT, which permits commercial use and redistribution under its
+notice-preservation terms. Third-party dependency licenses remain separate.
 
 ## Linux CI compatibility correction
 The first Linux GitHub Actions run exposed two test-host assumptions: the OPNsense lock file is root-owned in production but test temp locks are not, and Linux runners may have less than 45 seconds of monotonic uptime. The public source now skips the Omada cooldown only when there has been no previous attempt; the test suite mocks the root-owned lock state without relaxing production ownership enforcement. The original private deployment and its helper remain unchanged.
