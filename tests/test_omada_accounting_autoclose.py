@@ -200,7 +200,8 @@ class NoCleanupWithoutAckTests(unittest.TestCase):
                      patch.object(helper,"wait_for_accounting_successor") as cleanup, \
                      patch.object(helper,"fcntl",types.SimpleNamespace(
                          flock=lambda fd, flags:None, LOCK_EX=2, LOCK_NB=4)), \
-                     patch.object(helper.stat, "S_IMODE", return_value=0o600):
+                     patch.object(helper.stat, "S_IMODE", return_value=0o600), \
+                     patch.object(helper.os, "fstat", return_value=types.SimpleNamespace(st_uid=0, st_mode=0o600)):
                     returned=helper.locked_execute(OLD)
                     self.assertEqual(returned["result"],reply["result"])
                     cleanup.assert_not_called()
@@ -217,7 +218,8 @@ class NoCleanupWithoutAckTests(unittest.TestCase):
                           return_value={"cleanup":"closed","new_session_id":NEW}) as close, \
              patch.object(helper,"fcntl",types.SimpleNamespace(
                  flock=lambda fd, flags:None, LOCK_EX=2, LOCK_NB=4)), \
-             patch.object(helper.stat, "S_IMODE", return_value=0o600):
+             patch.object(helper.stat, "S_IMODE", return_value=0o600), \
+                     patch.object(helper.os, "fstat", return_value=types.SimpleNamespace(st_uid=0, st_mode=0o600)):
             out=helper.locked_execute(OLD)
         self.assertEqual(out["result"],"ack")
         self.assertEqual(out["cleanup"],"closed")

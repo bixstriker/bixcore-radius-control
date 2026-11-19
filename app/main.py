@@ -576,7 +576,7 @@ def omada_wired_disconnect(body: OmadaWiredDisconnectRequest, request: Request):
         raise HTTPException(409, detail="Omada Disconnect уже выполняется")
     try:
         now = time.monotonic()
-        if now - _OMADA_WIRED_LAST_ATTEMPT < 45:
+        if _OMADA_WIRED_LAST_ATTEMPT > 0 and now - _OMADA_WIRED_LAST_ATTEMPT < 45:
             raise HTTPException(429, detail="Повторный Disconnect не ранее чем через 45 секунд")
         # Start cooldown before the network operation; an ambiguous timeout
         # must never trigger automatic or immediate repeat requests.
