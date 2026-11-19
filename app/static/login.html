@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Вход · BiXCore RADIUS Control</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/ui-theme.css">
+  <link rel="stylesheet" href="/static/responsive.css">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <script src="/static/ui.js" defer></script>
+  <script src="/static/login.js" defer></script>
+</head>
+<body class="login-body">
+  <div class="login-preferences"><div class="bix-preferences" aria-label="Настройки интерфейса"><label class="sr-only" for="bix-language">Язык интерфейса</label><select class="bix-language" id="bix-language" aria-label="Язык интерфейса"><option value="ru" data-i18n-ignore>Русский</option><option value="en" data-i18n-ignore>English</option><option value="de" data-i18n-ignore>Deutsch</option><option value="uk" data-i18n-ignore>Українська</option></select><button type="button" class="bix-theme" aria-label="Сменить тему" aria-pressed="false" title="Тема: тёмная"><span class="theme-icon" aria-hidden="true">☾</span></button></div></div>
+  <main class="login-layout">
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="login-brand">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 52 58" width="41" height="45" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shield" x1="7" y1="4" x2="47" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#59DCFA"/><stop offset="1" stop-color="#6474FF"/></linearGradient></defs><path d="M26 3 46 11v18c0 13-8 20-20 26C14 49 6 42 6 29V11L26 3Z" stroke="url(#shield)" stroke-width="4" stroke-linejoin="round"/><path d="M15 24 29 13 39 28 25 43 15 24 25 43" stroke="#9BCBFF" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="24" r="4.2" fill="#59E3F5"/><circle cx="29" cy="13" r="3.5" fill="#A8C5FF"/><circle cx="39" cy="28" r="4" fill="#7F9BFF"/><circle cx="25" cy="43" r="4.1" fill="#6ADCFB"/></svg></span>
+        <div><strong>BiXCore</strong><span>RADIUS CONTROL</span></div>
+      </div>
+      <div class="login-kicker">АДМИНИСТРИРОВАНИЕ СЕТИ</div>
+      <h1 id="login-title">Вход в систему</h1>
+      <p class="login-description">Войдите под учётной записью администратора, чтобы просматривать RADIUS-сессии и управлять подключениями.</p>
+      <p id="login-success" class="login-success hidden" role="status"></p>
+      <form id="login-form" class="login-form" autocomplete="on">
+        <label for="login-username">Логин</label>
+        <input id="login-username" name="username" type="text" value="admin" autocomplete="username"
+               required maxlength="64" autofocus spellcheck="false">
+        <label for="login-password">Пароль</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password"
+               required maxlength="256">
+        <p id="login-error" class="login-error hidden" role="alert" aria-live="polite"></p>
+        <button id="login-submit" type="submit">Войти</button>
+      </form>
+      <p class="login-footnote">Авторизация сохраняется на этом устройстве до выхода или окончания сессии.</p>
+    </section>
+    <div class="login-footer">BiXCore Radius Control v1.0.1 · Защищённый доступ</div>
+  </main>
+</body>
+</html>

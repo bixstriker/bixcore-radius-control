@@ -1,0 +1,12 @@
+[Unit]
+Description=Pull BiXCore RADIUS accounting snapshot once per minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=true
+RandomizedDelaySec=0
+Unit=bixcore-radius-pull.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,258 @@
+{
+  "source": "demo",
+  "as_of": "2026-11-13T09:42:41+01:00",
+  "note": "Демо-данные для проверки правил. Все MAC, UUID, Session ID и клиенты портала вымышлены.",
+  "sessions": [
+    {
+      "username": "demo_phone15",
+      "nasipaddress": "192.0.2.4",
+      "callingstationid": "02-00-00-00-00-03",
+      "acctsessionid": "demo-sess-15ultra",
+      "acctstarttime": "2026-11-13T09:22:46+01:00",
+      "acctupdatetime": "2026-11-13T09:37:46+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "demo_phone11",
+      "nasipaddress": "192.0.2.4",
+      "callingstationid": "02-00-00-00-00-04",
+      "acctsessionid": "demo-sess-mi11",
+      "acctstarttime": "2026-11-12T13:34:04+01:00",
+      "acctupdatetime": "2026-11-13T09:39:47+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "Lenovo",
+      "nasipaddress": "192.0.2.5",
+      "callingstationid": "02-00-00-00-00-05",
+      "acctsessionid": "demo-sess-lenovo",
+      "acctstarttime": "2026-11-09T14:04:10+01:00",
+      "acctupdatetime": "2026-11-13T09:39:11+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "Secondary_Pad8Pro",
+      "nasipaddress": "192.0.2.4",
+      "callingstationid": "02-00-00-00-00-06",
+      "acctsessionid": "demo-sess-pad8pro",
+      "acctstarttime": "2026-11-13T05:37:27+01:00",
+      "acctupdatetime": "2026-11-13T09:42:28+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "host/LAB-DC01.ad.example.test",
+      "nasipaddress": "192.0.2.6",
+      "callingstationid": "02-00-00-00-00-07",
+      "acctsessionid": "demo-sess-dc01",
+      "acctstarttime": "2026-11-05T19:32:43+01:00",
+      "acctupdatetime": "2026-11-13T09:32:45+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "Lenovo",
+      "nasipaddress": "192.0.2.5",
+      "callingstationid": "02-00-00-00-00-05",
+      "acctsessionid": "demo-old-lenovo",
+      "acctstarttime": "2026-11-09T09:06:36+01:00",
+      "acctupdatetime": "2026-11-09T14:01:36+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "host/LAB-DC01.ad.example.test",
+      "nasipaddress": "192.0.2.6",
+      "callingstationid": "02-00-00-00-00-07",
+      "acctsessionid": "demo-old-dc01",
+      "acctstarttime": "2026-10-04T18:00:00+02:00",
+      "acctupdatetime": "2026-10-04T18:05:07+02:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "demo_phone15",
+      "nasipaddress": "192.0.2.5",
+      "callingstationid": "02-00-00-00-00-03",
+      "acctsessionid": "demo-ended-roam",
+      "acctstarttime": "2026-11-13T09:15:17+01:00",
+      "acctupdatetime": "2026-11-13T09:20:17+01:00",
+      "acctstoptime": "2026-11-13T09:21:33+01:00"
+    },
+    {
+      "username": "demo_phone15",
+      "nasipaddress": "192.0.2.4",
+      "callingstationid": "02-00-00-00-00-03",
+      "acctsessionid": "demo-ended-15ultra",
+      "acctstarttime": "2026-11-13T09:21:44+01:00",
+      "acctupdatetime": "2026-11-13T09:21:44+01:00",
+      "acctstoptime": "2026-11-13T09:22:15+01:00"
+    },
+    {
+      "username": "host/LAB-DC02.ad.example.test",
+      "nasipaddress": "192.0.2.6",
+      "callingstationid": "02-00-00-00-00-08",
+      "acctsessionid": "demo-ended-dc02",
+      "acctstarttime": "2026-11-11T13:00:00+01:00",
+      "acctupdatetime": "2026-11-11T13:00:00+01:00",
+      "acctstoptime": "2026-11-11T13:05:00+01:00"
+    },
+    {
+      "username": "guest-captive",
+      "nasipaddress": "127.0.0.1",
+      "callingstationid": "02-00-00-00-00-09",
+      "acctsessionid": "demo-portal",
+      "acctstarttime": "2026-11-13T09:30:00+01:00",
+      "acctupdatetime": "2026-11-13T09:35:00+01:00",
+      "acctstoptime": "2026-11-13T09:35:00+01:00"
+    },
+    {
+      "username": "guestwlan",
+      "nasipaddress": "192.0.2.4",
+      "callingstationid": "02-00-00-00-00-0A",
+      "acctsessionid": "demo-guest-wifi-01",
+      "acctstarttime": "2026-11-13T09:30:00+01:00",
+      "acctupdatetime": "2026-11-13T09:40:00+01:00",
+      "acctstoptime": null
+    },
+    {
+      "username": "guestwlan",
+      "nasipaddress": "192.0.2.5",
+      "callingstationid": "02-00-00-00-00-0B",
+      "acctsessionid": "demo-guest-wifi-02",
+      "acctstarttime": "2026-11-13T09:31:00+01:00",
+      "acctupdatetime": "2026-11-13T09:41:00+01:00",
+      "acctstoptime": null
+    }
+  ],
+  "local_users": [
+    {
+      "uuid": "demo-phone-001",
+      "username": "demo_phone15",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-phone-002",
+      "username": "demo_phone11",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-phone-003",
+      "username": "Lenovo",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-phone-004",
+      "username": "Secondary_Pad8Pro",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-bootstrap-001",
+      "username": "host/LAB-DC01.ad.example.test",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-bootstrap-002",
+      "username": "host/LAB-DC02.ad.example.test",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-mab-001",
+      "username": "020000000022",
+      "enabled": true,
+      "vlan": 20
+    },
+    {
+      "uuid": "demo-guest-wifi",
+      "username": "guestwlan",
+      "enabled": true,
+      "vlan": 30
+    },
+    {
+      "uuid": "demo-portal-guest",
+      "username": "guest",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-portal-guest1",
+      "username": "guest1",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-portal-guest2",
+      "username": "guest2",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-portal-guest3",
+      "username": "guest3",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-portal-guest4",
+      "username": "guest4",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-portal-named",
+      "username": "Visitor_2026",
+      "enabled": true,
+      "vlan": null
+    },
+    {
+      "uuid": "demo-book-01",
+      "username": "OnyxBoox",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-book-02",
+      "username": "PocketBookBiX",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-book-03",
+      "username": "PocketBookSecondary",
+      "enabled": true,
+      "vlan": 10
+    },
+    {
+      "uuid": "demo-device-03",
+      "username": "Erich_Poco",
+      "enabled": true,
+      "vlan": 10
+    }
+  ],
+  "portal_collected": true,
+  "users_collected": true,
+  "portal_sessions": [
+    {
+      "sessionId": "demo-cp-101",
+      "zoneid": "1",
+      "userName": "guest1",
+      "ipAddress": "203.0.113.101",
+      "macAddress": "02:00:00:00:00:0A",
+      "startTime": 1794558600,
+      "last_accessed": 1794559200,
+      "authenticated_via": "Local FreeRADIUS"
+    },
+    {
+      "sessionId": "demo-cp-102",
+      "zoneid": "1",
+      "userName": "Visitor_2026",
+      "ipAddress": "203.0.113.102",
+      "macAddress": "02:00:00:00:00:0B",
+      "startTime": 1794558660,
+      "last_accessed": 1794559140,
+      "authenticated_via": "Local FreeRADIUS"
+    }
+  ]
+}

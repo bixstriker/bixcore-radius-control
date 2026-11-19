@@ -1,0 +1,40 @@
+# Public release audit — v1.0.1
+
+Date: 2026-11-19. Scope: public, privacy-sanitized export of BiXCore RADIUS Control v1.0.1.
+
+## Release isolation
+
+- A separate directory was created from **selected tracked source files**.
+- No private `.git` directory, refs, commits, tags, credentials or local files were copied.
+- Excluded: private host inventory and incident journals, Recovery Runbook, internal
+  service notes, one-time Accounting repair script, production snapshots and backups.
+- New public README and architecture/security instructions are included.
+- Deployment addresses in code, fixtures and Compose examples were replaced with
+  documentation-only IP ranges. Device MACs and hostnames are synthetic.
+- Sensitive runtime files are blocked by `.gitignore`. Real authentication data,
+  CoA secrets and SSH private/public host keys are **not** part of this release.
+
+## Verification
+
+- Full regression suite: **258 tests executed, 257 passed, 1 skipped**.
+- Node.js syntax check: `app/static/app.js`, `app/static/ui.js`,
+  `app/static/login.js` passed.
+- Python source compilation: passed.
+- All 19 included Compose YAML files parsed as YAML.
+- File-level checks reported no original internal network identifiers, original
+  domain, private-key PEM/OpenSSH material, embedded CoA credentials or
+  real operational configuration files in the public export.
+- The production NAS/OPNsense installation and the private repository were
+  not changed in creating this export.
+
+## Important limitations
+
+The original system was built for a specific home/lab environment.
+This is a privacy-sanitized **source release**, not an automatic installer.
+Review every example constant and restricted-command endpoint before use.
+Sample documentation IPs and `example.test` are non-routable and deliberately
+do not point to a real system. Tests use mock or synthetic data; they do not
+constitute an end-to-end field test of another installation.
+
+A public source release does not imply permission to use it commercially or
+redistribute it. No third-party software license has been selected by the owner.

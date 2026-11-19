@@ -1,0 +1,56 @@
+name: bixcore-radius-control
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bixcore-radius-control:0.10.3-unifi-pmksa
+    container_name: bixcore-radius-control-web
+    ports:
+      - "127.0.0.1:18765:8765"
+    environment:
+      BIX_RADIUS_SNAPSHOT: /app/import/current.json
+      BIX_RADIUS_ALLOWLIST: /app/data/empty_allowlist.json
+      BIX_RADIUS_GUEST_PORTAL_ZONES: "0"
+      BIX_UNIFI_DISCONNECT_ENABLED: "1"
+      BIX_RADIUS_USER_CONTROL_ENABLED: "1"
+      BIX_ADMIN_AUTH_ENABLED: "1"
+      BIX_MANUAL_REFRESH_ENABLED: "1"
+      BIX_STALE_ACCOUNTING_CLOSE_ENABLED: "1"
+      BIX_UNIFI_CONTROL_ENABLED: "1"
+      BIX_UNIFI_CONTROL_SOCKET: /run/bixcore-unifi/trigger.sock
+      BIX_UNIFI_PMKSA_ENABLED: "1"
+      BIX_MANUAL_REFRESH_SOCKET: /run/bixcore-refresh/trigger.sock
+      BIX_ADMIN_CREDENTIALS_PATH: /run/bix-admin/credentials.json
+      BIX_CONTROL_ORIGIN: https://radius.example.test
+    volumes:
+      - ./private:/app/import:ro
+      - ./keys/unifi_disconnect_ed25519:/run/secrets/bix_unifi_disconnect_key:ro
+      - ./keys/stale_close_ed25519:/run/secrets/bix_stale_close_key:ro
+      - ./keys/unifi_pmksa_ed25519:/run/secrets/bix_unifi_pmksa_key:ro
+      - ./keys/unifi_known_hosts:/run/secrets/bix_known_hosts:ro
+      - ./keys/radius_user_toggle_ed25519:/run/secrets/bix_radius_user_toggle_key:ro
+      - ./keys/radius_user_toggle_known_hosts:/run/secrets/bix_radius_user_toggle_hosts:ro
+      - ./private/refresh_socket:/run/bixcore-refresh:ro
+      - ./private/unifi_socket:/run/bixcore-unifi:ro
+      - ./private/admin_account:/run/bix-admin:rw
+      - ./private/admin_session_key:/run/secrets/bix_admin_signing_key:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    mem_limit: 192m
+    cpus: 0.5
+    restart: unless-stopped
+    networks:
+      default:
+        gw_priority: 0
+      bixcore_radius_npm:
+        gw_priority: -1
+networks:
+  bixcore_radius_npm:
+    external: true

@@ -1,0 +1,139 @@
+# v0.10.9.0 Omada accounting auto-close pilot: Omada wired 802.1X Disconnect, disabled by default.
+# Activate only after isolated testing, backup, and health checks.
+name: bixcore-radius-control
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: bixcore-radius-control:0.10.9-web
+    container_name: bixcore-radius-control-web
+    user: "10001:10005"
+    ports:
+      - "127.0.0.1:18765:8765"
+    environment:
+      BIX_RADIUS_SNAPSHOT: /app/import/current.json
+      BIX_RADIUS_ALLOWLIST: /app/data/empty_allowlist.json
+      BIX_RADIUS_GUEST_PORTAL_ZONES: "0"
+      BIX_UNIFI_DISCONNECT_ENABLED: "1"
+      BIX_OMADA_WIRED_ENABLED: "0"
+      BIX_RADIUS_USER_CONTROL_ENABLED: "1"
+      BIX_ADMIN_AUTH_ENABLED: "1"
+      BIX_AUDIT_ENABLED: "1"
+      BIX_MANUAL_REFRESH_ENABLED: "1"
+      BIX_COMPOSE_SYNC_ENABLED: "1"
+      BIX_CONTROL_GATEWAY_ENABLED: "1"
+      BIX_STALE_ACCOUNTING_CLOSE_ENABLED: "1"
+      BIX_UNIFI_CONTROL_ENABLED: "1"
+      BIX_UNIFI_PMKSA_ENABLED: "1"
+      BIX_UNIFI_CONTROL_SOCKET: /run/bixcore-unifi/trigger.sock
+      BIX_MANUAL_REFRESH_SOCKET: /run/bixcore-refresh/trigger.sock
+      BIX_ADMIN_CREDENTIALS_PATH: /run/bix-admin/credentials.json
+      BIX_CONTROL_ORIGIN: https://radius.example.test
+    volumes:
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/snapshot:/app/import:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/sync_socket:/run/bixcore-refresh:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/control_socket:/run/bixcore-unifi:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/private/admin_account:/run/bix-admin:rw
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/private/audit:/app/audit:rw
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/private/admin_session_key:/run/secrets/bix_admin_signing_key:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 100
+    mem_limit: 192m
+    cpus: 0.5
+    restart: unless-stopped
+    depends_on:
+      sync:
+        condition: service_healthy
+      control:
+        condition: service_healthy
+    networks:
+      default:
+        gw_priority: 0
+      bixcore_radius_npm:
+        gw_priority: -1
+
+  sync:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: bixcore-radius-control:0.10.4-worker
+    container_name: bixcore-radius-control-sync
+    user: "10002:10005"
+    command: ["python", "-B", "-m", "sync.compose_sync"]
+    environment:
+      BIX_SYNC_CONTAINER: "1"
+      BIX_SYNC_ROOT: /app
+      BIX_SYNC_KEYS_DIR: /run/secrets/pull
+      BIX_SYNC_PRIVATE_DIR: /app/import
+      BIX_SYNC_INTERVAL_SECONDS: "60"
+      BIX_MANUAL_REFRESH_SOCKET: /run/bixcore-refresh/trigger.sock
+    volumes:
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/snapshot:/app/import:rw
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/pull_ed25519:/run/secrets/pull/pull_ed25519:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/known_hosts:/run/secrets/pull/known_hosts:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/sync_socket:/run/bixcore-refresh:rw
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 40
+    mem_limit: 160m
+    cpus: 0.7
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-B", "-m", "sync.healthcheck", "/run/bixcore-refresh/trigger.sock"]
+      interval: 15s
+      timeout: 3s
+      retries: 4
+      start_period: 20s
+    networks: [workers]
+
+  control:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: bixcore-radius-control:0.10.8-worker
+    container_name: bixcore-radius-control-control
+    user: "10003:10005"
+    command: ["python", "-B", "-m", "sync.compose_control"]
+    environment:
+      BIX_UNIFI_CONTROL_SOCKET: /run/bixcore-unifi/trigger.sock
+    volumes:
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/control_socket:/run/bixcore-unifi:rw
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/unifi_disconnect_ed25519:/run/secrets/unifi_disconnect_key:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/stale_close_ed25519:/run/secrets/stale_close_key:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/unifi_pmksa_ed25519:/run/secrets/unifi_pmksa_key:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/radius_user_toggle_ed25519:/run/secrets/radius_user_toggle_key:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/unifi_known_hosts:/run/secrets/bix_known_hosts:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/radius_user_toggle_known_hosts:/run/secrets/radius_user_hosts:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/ap_service_ed25519:/run/secrets/ap_service_key:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/ap_known_hosts:/run/secrets/ap_known_hosts:ro
+      - ${BIX_RUNTIME_ROOT:-/srv/bixcore-radius-control}/v0104-prod-state/keys/omada_disconnect_ed25519:/run/secrets/omada_disconnect_key:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 40
+    mem_limit: 160m
+    cpus: 0.7
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-B", "-m", "sync.healthcheck", "/run/bixcore-unifi/trigger.sock"]
+      interval: 15s
+      timeout: 3s
+      retries: 4
+      start_period: 20s
+    networks: [workers]
+
+networks:
+  workers:
+    driver: bridge
+  bixcore_radius_npm:
+    external: true

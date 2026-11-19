@@ -1,0 +1,22 @@
+name: bixcore-radius-demo
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bixcore-radius-control:0.5.2-demo
+    container_name: bixcore-radius-demo
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      BIX_RADIUS_SNAPSHOT: /app/data/demo_snapshot.json
+      BIX_RADIUS_ALLOWLIST: /app/data/demo_allowlist.json
+      BIX_UNIFI_DISCONNECT_ENABLED: "0"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

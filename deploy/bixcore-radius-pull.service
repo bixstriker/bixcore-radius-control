@@ -1,0 +1,29 @@
+[Unit]
+Description=BiXCore RADIUS read-only snapshot collection
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/srv/bixcore-radius-control
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 -B /srv/bixcore-radius-control/sync/pull_snapshot.py
+TimeoutStartSec=45
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/srv/bixcore-radius-control/private
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+SystemCallArchitectures=native
+UMask=0077
+MemoryMax=128M
+TasksMax=32

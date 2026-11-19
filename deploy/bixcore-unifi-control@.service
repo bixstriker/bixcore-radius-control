@@ -1,0 +1,26 @@
+[Unit]
+Description=BiXCore scoped UniFi STA/PMKSA inspection and EAPOL reauthentication
+
+[Service]
+Type=exec
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -B /srv/bixcore-radius-control/sync/unifi_host.py
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+TimeoutStartSec=110
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+SystemCallArchitectures=native
+UMask=0077
+MemoryMax=64M
+TasksMax=20

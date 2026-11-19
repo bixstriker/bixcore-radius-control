@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>BiXCore · RADIUS Control</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/ui-theme.css">
+  <link rel="stylesheet" href="/static/responsive.css">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <script src="/static/ui.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="BiXCore Radius Control — главная"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 52 58" width="41" height="45" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shield" x1="7" y1="4" x2="47" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#59DCFA"/><stop offset="1" stop-color="#6474FF"/></linearGradient></defs><path d="M26 3 46 11v18c0 13-8 20-20 26C14 49 6 42 6 29V11L26 3Z" stroke="url(#shield)" stroke-width="4" stroke-linejoin="round"/><path d="M15 24 29 13 39 28 25 43 15 24 25 43" stroke="#9BCBFF" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="24" r="4.2" fill="#59E3F5"/><circle cx="29" cy="13" r="3.5" fill="#A8C5FF"/><circle cx="39" cy="28" r="4" fill="#7F9BFF"/><circle cx="25" cy="43" r="4.1" fill="#6ADCFB"/></svg></span><span class="brand-name"><b>BiXCore</b><span>RADIUS Control</span></span></a>
+      <nav aria-label="Разделы">
+        <button class="nav-btn is-active" type="button" data-tab="sessions"><span class="nav-icon">◉</span> Сессии</button>
+        <button class="nav-btn" type="button" data-tab="users"><span class="nav-icon">▣</span> Пользователи RADIUS</button>
+        <button class="nav-btn" type="button" data-tab="portal"><span class="nav-icon">◎</span> Captive Portal</button>
+        <button class="nav-btn" type="button" data-tab="audit"><span class="nav-icon">▤</span> Журнал аудита</button>
+      </nav>
+      <div class="sidebar-footer"><span class="status-dot"></span> <span>Версия 1.0.1 · Автосинхронизация</span></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">BiXCore <span>/</span> <strong id="crumb">Сессии</strong></div>
+        <div class="top-actions"><button id="refresh" type="button" class="refresh-btn" title="Перечитать сохранённый снимок">↻ Перечитать</button><button id="manual-refresh" type="button" class="refresh-btn manual-refresh" disabled title="Запустить новый экспорт с RadiusGateway">Обновить данные сейчас</button><button id="password-change-open" type="button" class="logout-btn" title="Изменить пароль администратора">Сменить пароль</button><button id="logout-button" type="button" class="logout-btn" title="Завершить сеанс администратора">Выйти</button></div><div class="bix-preferences" aria-label="Настройки интерфейса"><label class="sr-only" for="bix-language">Язык интерфейса</label><select class="bix-language" id="bix-language" aria-label="Язык интерфейса"><option value="ru" data-i18n-ignore>Русский</option><option value="en" data-i18n-ignore>English</option><option value="de" data-i18n-ignore>Deutsch</option><option value="uk" data-i18n-ignore>Українська</option></select><button type="button" class="bix-theme" aria-label="Сменить тему" aria-pressed="false" title="Тема: тёмная"><span class="theme-icon" aria-hidden="true">☾</span></button></div>
+      </header>
+      <div class="content">
+        <section class="heading"><div><div class="eyebrow">NETWORK ACCESS / OBSERVABILITY <span class="readonly-pill">RADIUS · UNIFI</span></div><h1 id="page-title">RADIUS-сессии</h1><p id="page-description">Учёт всех клиентов UniFi и Omada. Наличие свежего Accounting не гарантирует ассоциацию на AP.</p></div></section>
+        <div class="alert" role="status"><span aria-hidden="true">ⓘ</span><div><strong id="mode-title">Загрузка источника</strong><span id="snapshot-notice">Загрузка снимка…</span></div></div>
+        <div id="error-box" class="error-box hidden" role="alert"></div>
+        <div id="manual-refresh-result" class="disconnect-result hidden" role="status" aria-live="polite"></div>
+        <section id="summary-cards" class="stats" aria-label="Сводка">
+          <div class="stat"><div class="stat-label">Текущие сессии</div><div id="stat-total" class="stat-value">—</div><div class="stat-hint">Fresh + Stale, без истории</div></div>
+          <div class="stat"><div class="stat-label">Свежие · вероятно активны</div><div id="stat-fresh" class="stat-value">—</div><div class="stat-hint green-dot">Interim ≤ 15 минут</div></div>
+          <div class="stat"><div class="stat-label">Устаревшие</div><div id="stat-stale" class="stat-value">—</div><div class="stat-hint amber-dot">Без Stop, но давно нет Update</div></div>
+          <div class="stat"><div class="stat-label">История сессий</div><div id="stat-ended" class="stat-value">—</div><div class="stat-hint">До 2 на устройство</div></div>
+        </section>
+        <section class="panel" id="sessions-view">
+          <div class="panel-head"><div><h2 id="session-heading">Текущие RADIUS-сессии</h2><p id="session-subtitle">Fresh и Stale; все UniFi, Omada и гостевые Wi-Fi-клиенты</p></div><span id="session-count" class="count-label">—</span></div>
+          <div class="session-tabs" role="tablist" aria-label="Текущие подключения и история">
+            <button type="button" class="session-tab is-selected" data-session-view="current" role="tab" aria-selected="true">Текущие</button>
+            <button type="button" class="session-tab" data-session-view="history" role="tab" aria-selected="false">История · 2 на устройство</button>
+          </div>
+          <div class="toolbar">
+            <div id="session-state-filters" class="filter-group" role="group" aria-label="Статус текущих сессий">
+              <button type="button" class="filter is-selected" data-state="all">Все</button>
+              <button type="button" class="filter" data-state="fresh">Fresh</button>
+              <button type="button" class="filter" data-state="stale">Stale</button>
+            </div>
+            <label class="sr-only" for="nas-filter">NAS</label><select id="nas-filter"><option value="all">Все NAS</option><option value="192.0.2.4">UniFi Primary</option><option value="192.0.2.5">UniFi Secondary</option><option value="192.0.2.6">Omada</option><option value="127.0.0.1">Локальный NAS портала</option></select>
+            <label class="sr-only" for="session-search">Поиск сессий</label><input id="session-search" type="search" placeholder="Поиск CN, MAC, Session ID…" autocomplete="off">
+          </div>
+          <label class="portal-toggle"><input id="portal-toggle" type="checkbox"> Также показывать RADIUS Accounting портала (NAS 127.0.0.1)</label>
+          <div id="disconnect-result" class="disconnect-result hidden" role="status" aria-live="polite"></div>
+          <div class="table-scroll"><table><thead><tr><th>Идентичность</th><th>NAS</th><th>MAC</th><th>Начало</th><th id="session-time-heading">Последний Update</th><th>Состояние</th><th>Управление</th></tr></thead><tbody id="session-rows"></tbody></table></div>
+          <p id="sessions-empty" class="empty hidden">Подходящих сессий нет.</p>
+          <div class="pagination" aria-label="Страницы"><span id="page-info">—</span><div><button type="button" id="prev-page">← Назад</button><button type="button" id="next-page">Вперёд →</button></div></div>
+          <p class="stale-footnote">Stale — запись без Accounting Stop. «Закрыть запись» завершает только старую запись в базе FreeRADIUS, не отключая текущий Wi-Fi-клиент.</p>
+          <div class="panel-bottom">«Активные» показывают Fresh и Stale. «История» хранит до двух последних завершённых сессий на персональную учётную запись RADIUS, даже если MAC или точка доступа изменились. Для общей учётной записи guestwlan и неизвестных аккаунтов — до двух записей на каждый MAC (без MAC — по имени и NAS). Captive Portal — отдельная вкладка. Управление Omada пока ограничено.</div>
+        </section>
+        <section class="panel hidden" id="users-view">
+          <div class="panel-head"><div><h2>Пользователи RADIUS · с VLAN</h2><p>Все записи с VLAN; guestwlan отдельно выше, записи без VLAN — в Captive Portal</p></div><span id="user-count" class="count-label">—</span></div>
+          <div class="guest-control">
+            <div><div class="guest-kicker">ГОСТЕВОЙ WI-FI · VLAN 30</div><h3><span class="guest-name">guestwlan</span> <span id="guest-status" class="state stale">Не проверено</span></h3><p>Учётная запись доступа к Guest Wi-Fi (VLAN 30). Авторизация в Captive Portal — отдельный этап.</p></div>
+            <div class="guest-buttons"><button type="button" class="action-button" id="guest-enable" disabled>Включить</button><button type="button" class="action-button warn" id="guest-disable" disabled>Выключить</button><button type="button" class="action-button warn" id="guest-preview" disabled>Просмотреть сессии для Disconnect…</button></div>
+          </div>
+          <div id="guest-control-result" class="disconnect-result hidden" role="status" aria-live="polite"></div>
+          <div class="toolbar">
+            <label class="sr-only" for="user-category">Категория</label>
+            <select id="user-category"><option value="all">Все категории</option><option value="wifi_device">Устройства (с VLAN)</option><option value="infrastructure">Инфраструктура</option><option value="other_local">Требуют проверки</option></select>
+            <label class="sr-only" for="user-search">Поиск</label><input id="user-search" type="search" placeholder="Поиск учётной записи или UUID…" autocomplete="off">
+          </div>
+          <div id="user-toggle-result" class="disconnect-result hidden" role="status" aria-live="polite"></div>
+          <div class="table-scroll"><table><thead><tr><th>Пользователь</th><th>Назначение</th><th>Enabled</th><th>VLAN в настройках</th><th>Ручное управление</th></tr></thead><tbody id="user-rows"></tbody></table></div>
+          <p id="users-empty" class="empty hidden">Нет записей. Если источник Users не подключён, это не означает, что пользователей нет на RadiusGateway.</p>
+          <div class="pagination"><span id="user-page-info">—</span><div><button type="button" id="user-prev-page">← Назад</button><button type="button" id="user-next-page">Вперёд →</button></div></div>
+          <div class="panel-bottom">Enabled/Disabled и изменение VLAN доступны только обычным локальным пользователям с VLAN. DC01/DC02 защищены; guestwlan и Captive Portal управляются отдельно. VLAN сохраняется постоянно и начинает действовать при новой полной авторизации. Disconnect не выполняется автоматически. Без таймеров.</div>
+        </section>
+        <section class="panel hidden" id="portal-view">
+          <div class="panel-head"><div><h2>Captive Portal · пользователи</h2><p>Локальные учётные записи без VLAN: Enabled, статус авторизации и сессии</p></div><div class="portal-counts"><span id="portal-count" class="count-label">—</span><span id="portal-active-count" class="count-label">—</span></div></div>
+          <div class="portal-path"><div><strong>1</strong> Wi-Fi с <code>guestwlan</code> → VLAN 30</div><span aria-hidden="true">→</span><div><strong>2</strong> Captive Portal · локальная учётная запись без VLAN</div></div>
+          <div id="portal-missing" class="warning-inline hidden">Список сессий портала недоступен: статус авторизации неизвестен.</div>
+          <div id="portal-action-result" class="disconnect-result hidden" role="status" aria-live="polite"></div>
+          <div class="toolbar"><label class="sr-only" for="portal-search">Поиск пользователей портала</label><input id="portal-search" type="search" placeholder="Имя, UUID, IP, MAC, Session ID…" autocomplete="off"></div>
+          <div class="table-scroll"><table><thead><tr><th>Пользователь</th><th>Enabled</th><th>Авторизация в портале</th><th>Сессии</th><th>Управление</th></tr></thead><tbody id="portal-rows"></tbody></table></div>
+          <p id="portal-empty" class="empty hidden">По выбранному фильтру учётные записи без VLAN не найдены.</p>
+          <div class="pagination"><span id="portal-page-info">—</span><div><button type="button" id="portal-prev-page">← Назад</button><button type="button" id="portal-next-page">Вперёд →</button></div></div>
+          <div id="portal-unmatched" class="portal-unmatched hidden"><h3>Авторизации без локальной учётной записи</h3><p>Отображаются отдельно, чтобы не приписать сессию другому пользователю.</p><ul id="portal-unmatched-list"></ul></div>
+          <div class="panel-bottom">Ручные Enabled/Disabled управляют следующими авторизациями, но не разрывают текущие сессии. «Disconnect» удаляет только выбранную сессию OPNsense Captive Portal. Статусы обновляются после очередного снимка. Без VLAN и таймеров.</div>
+        </section>
+        <section class="panel hidden" id="audit-view" aria-label="Журнал аудита">
+          <div class="panel-head"><div><h2>Журнал действий администратора</h2><p>Постоянная история операций с подтверждённым результатом. Начатая операция без ответа помечается отдельно.</p></div><span id="audit-count" class="count-label">—</span></div>
+          <div class="toolbar">
+            <label class="sr-only" for="audit-action">Тип действия</label><select id="audit-action"><option value="">Все действия</option></select>
+            <label class="sr-only" for="audit-state">Результат действия</label><select id="audit-state"><option value="">Все результаты</option><option value="success">Успешно</option><option value="partial">Частично</option><option value="rejected">Отклонено</option><option value="error">Ошибка</option><option value="started">Начато · нет результата</option></select>
+            <button id="audit-reload" class="refresh-btn" type="button">↻ Перечитать журнал</button>
+          </div>
+          <div id="audit-error" class="disconnect-result hidden" role="alert"></div>
+          <div class="table-scroll"><table><thead><tr><th>Время</th><th>Администратор</th><th>Операция</th><th>Цель</th><th>Результат</th><th>Подробности</th></tr></thead><tbody id="audit-rows"></tbody></table></div>
+          <p id="audit-empty" class="empty hidden">Записей аудита по выбранному фильтру нет.</p>
+          <div class="pagination"><span id="audit-page-info">—</span><div><button type="button" id="audit-prev">← Назад</button><button type="button" id="audit-next">Вперёд →</button></div></div>
+          <div class="panel-bottom">События сохраняются на NAS в отдельной SQLite-базе. Пароли, cookie, секретные ключи и полные тела запросов в журнал не записываются. Состояние «Начато» означает, что итог операции не подтверждён.</div>
+        </section>
+        <section id="plan-panel" class="panel hidden" aria-live="polite"><div class="panel-head"><div><h2>Гостевые сессии для Disconnect</h2><p>Только UniFi, точная учётная запись guestwlan. Captive Portal не отключаем.</p></div><button id="close-plan" type="button" class="refresh-btn">Закрыть</button></div><div id="plan-details" class="plan-body"></div></section>
+        <footer class="footer">BiXCore Radius Control v1.0.1 · Guest Wi-Fi, Captive Portal и RADIUS</footer>
+      </div>
+    </main>
+  </div>
+  <dialog id="guest-action-dialog" class="disconnect-dialog" aria-labelledby="guest-dialog-title" aria-describedby="guest-dialog-warning">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">!</span>
+        <div><div class="disconnect-dialog-kicker">GUEST WI-FI · VLAN 30 · РУЧНОЕ УПРАВЛЕНИЕ</div>
+          <h2 id="guest-dialog-title">Подтвердить операцию?</h2></div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Учётная запись</span><strong>guestwlan · VLAN 30</strong></div>
+        <div><span>Операция</span><strong id="guest-dialog-action"></strong></div>
+      </div>
+      <p id="guest-dialog-warning" class="disconnect-dialog-note"></p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Выполнить</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="portal-action-dialog" class="disconnect-dialog" aria-labelledby="portal-action-title" aria-describedby="portal-action-warning">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">!</span>
+        <div><div class="disconnect-dialog-kicker">CAPTIVE PORTAL · РУЧНОЕ УПРАВЛЕНИЕ</div>
+          <h2 id="portal-action-title">Подтвердить действие?</h2></div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Пользователь</span><strong id="portal-dialog-name"></strong></div>
+        <div><span>Действие</span><strong id="portal-dialog-action"></strong></div>
+        <div><span>Сессия</span><strong id="portal-dialog-target" class="mono"></strong></div>
+      </div>
+      <p id="portal-action-warning" class="disconnect-dialog-note"></p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Выполнить</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="user-vlan-dialog" class="disconnect-dialog" aria-labelledby="user-vlan-title" aria-describedby="user-vlan-warning">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol password-change-symbol" aria-hidden="true">⇄</span>
+        <div>
+          <div class="disconnect-dialog-kicker">FREERADIUS · РУЧНОЕ УПРАВЛЕНИЕ</div>
+          <h2 id="user-vlan-title">Изменить VLAN</h2>
+        </div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Пользователь</span><strong id="user-vlan-name"></strong></div>
+        <div><span>Сейчас</span><strong id="user-vlan-current"></strong></div>
+      </div>
+      <div class="vlan-dialog-field">
+        <label for="user-vlan-new">Новый VLAN ID</label>
+        <input id="user-vlan-new" type="number" inputmode="numeric" step="1" min="1" max="4094" required>
+        <span>Допустимый диапазон 1–4094. VLAN должен существовать в сети и поддерживаться точкой доступа.</span>
+      </div>
+      <p id="user-vlan-warning" class="disconnect-dialog-note">Изменение постоянное. BiXCore не отправляет Disconnect автоматически. Новый VLAN начнёт действовать после новой полной авторизации; точка доступа может инициировать переавторизацию сама.</p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Сохранить VLAN</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="user-toggle-dialog" class="disconnect-dialog" aria-labelledby="user-toggle-dialog-title" aria-describedby="user-toggle-dialog-warning">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">!</span>
+        <div><div class="disconnect-dialog-kicker">FREERADIUS · РУЧНОЕ УПРАВЛЕНИЕ</div><h2 id="user-toggle-dialog-title">Изменить состояние пользователя?</h2></div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Пользователь</span><strong id="user-toggle-dialog-name"></strong></div>
+        <div><span>Сеть</span><strong id="user-toggle-dialog-vlan"></strong></div>
+        <div><span>Операция</span><strong id="user-toggle-dialog-action"></strong></div>
+      </div>
+      <p id="user-toggle-dialog-warning" class="disconnect-dialog-note"></p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Применить</button>
+      </div>
+    </form>
+  </dialog>
+    <dialog id="reauth-dialog" class="disconnect-dialog" aria-labelledby="reauth-dialog-title">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">↻</span>
+        <div><div class="disconnect-dialog-kicker">UNIFI — МЯГКАЯ EAP-ПРОВЕРКА</div>
+          <h2 id="reauth-dialog-title">Запросить повторную EAP-проверку?</h2></div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Устройство</span><strong id="reauth-dialog-user"></strong></div>
+        <div><span>Точка доступа</span><strong id="reauth-dialog-nas"></strong></div>
+      </div>
+      <p class="disconnect-dialog-note">Отправим EAPOL_REAUTH только активному MAC на подтверждённом BSS.
+        Команда запускает повторную EAP-проверку без намеренного разрыва соединения.
+        Ответ OK не гарантирует успешный результат FreeRADIUS.</p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Отправить EAPOL_REAUTH</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="disconnect-dialog" class="disconnect-dialog" aria-labelledby="disconnect-dialog-title" aria-describedby="disconnect-dialog-hint">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">!</span>
+        <div><div class="disconnect-dialog-kicker">УПРАВЛЕНИЕ WI-FI</div><h2 id="disconnect-dialog-title">Disconnect / проверка PMKSA?</h2></div>
+      </div>
+      <p id="disconnect-dialog-description" class="disconnect-dialog-description">При подтверждённом Online отправим RADIUS Disconnect, иначе только проверим PMKSA. Клиент может подключиться снова.</p>
+      <div class="disconnect-dialog-target">
+        <div><span>Устройство</span><strong id="disconnect-dialog-user"></strong></div>
+        <div><span>Точка доступа</span><strong id="disconnect-dialog-nas"></strong></div>
+        <div><span>MAC-адрес</span><strong id="disconnect-dialog-mac" class="mono"></strong></div>
+      </div>
+      <p id="disconnect-dialog-hint" class="disconnect-dialog-note">Устройство сможет автоматически подключиться снова.</p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Выполнить Disconnect / PMKSA</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="password-change-dialog" class="disconnect-dialog password-change-dialog" aria-labelledby="password-change-title" aria-describedby="password-change-hint">
+    <form id="password-change-form" class="disconnect-dialog-content" autocomplete="off">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol password-change-symbol" aria-hidden="true">✦</span>
+        <div>
+          <div class="disconnect-dialog-kicker">УЧЁТНАЯ ЗАПИСЬ ADMIN</div>
+          <h2 id="password-change-title">Сменить пароль</h2>
+        </div>
+      </div>
+      <p id="password-change-hint" class="disconnect-dialog-description">Укажи действующий пароль, затем придумай новый. После сохранения потребуется войти снова.</p>
+      <div class="password-change-fields">
+        <label for="password-current">Текущий пароль</label>
+        <input type="password" id="password-current" name="current-password" required autocomplete="current-password" maxlength="256">
+        <label for="password-new">Новый пароль</label>
+        <input type="password" id="password-new" name="new-password" required autocomplete="new-password" minlength="16" maxlength="256">
+        <div class="password-change-requirement">Не менее 16 символов</div>
+        <label for="password-confirm">Подтвердить новый пароль</label>
+        <input type="password" id="password-confirm" name="confirm-password" required autocomplete="new-password" minlength="16" maxlength="256">
+      </div>
+      <p id="password-change-error" class="login-error hidden" role="alert" aria-live="polite"></p>
+      <div class="disconnect-dialog-actions">
+        <button type="button" id="password-change-cancel" class="disconnect-dialog-cancel">Отмена</button>
+        <button type="submit" id="password-change-submit" class="disconnect-dialog-confirm password-change-submit">Сохранить пароль</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="stale-close-dialog" class="disconnect-dialog" aria-labelledby="stale-close-dialog-title">
+    <form method="dialog" class="disconnect-dialog-content">
+      <div class="disconnect-dialog-header">
+        <span class="disconnect-dialog-symbol" aria-hidden="true">!</span>
+        <div><div class="disconnect-dialog-kicker">RADIUS ACCOUNTING — СТАРАЯ ЗАПИСЬ</div>
+          <h2 id="stale-close-dialog-title">Завершить старую запись?</h2></div>
+      </div>
+      <div class="disconnect-dialog-target">
+        <div><span>Устройство</span><strong id="stale-close-dialog-user"></strong></div>
+        <div><span>NAS</span><strong id="stale-close-dialog-nas"></strong></div>
+        <div><span>Session ID</span><strong id="stale-close-dialog-session" class="mono"></strong></div>
+      </div>
+      <p class="disconnect-dialog-note">Закроется только указанная старая запись FreeRADIUS Accounting.
+        Текущее подключение Wi-Fi и новая сессия устройства НЕ будут отключены.
+        Действие перенесёт запись в историю; перед изменением данные проверяются на OPNsense.</p>
+      <div class="disconnect-dialog-actions">
+        <button type="submit" value="cancel" class="disconnect-dialog-cancel" autofocus>Отмена</button>
+        <button type="submit" value="confirm" class="disconnect-dialog-confirm">Завершить запись</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

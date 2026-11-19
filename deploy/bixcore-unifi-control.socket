@@ -1,0 +1,13 @@
+[Unit]
+Description=BiXCore restricted UniFi inspection and EAPOL reauthentication socket
+
+[Socket]
+ListenStream=/srv/bixcore-radius-control/private/unifi_socket/trigger.sock
+Accept=yes
+SocketMode=0666
+DirectoryMode=0700
+MaxConnections=2
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

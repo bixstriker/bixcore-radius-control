@@ -1,0 +1,78 @@
+/* BiXCore responsive layout: tablet and phone. Loaded AFTER ui-theme.css. */
+@media (max-width: 1100px) {
+  .shell { display:block; min-height:100dvh; }
+  .main { width:100%; min-width:0; }
+  .sidebar {
+    width:100%; display:flex; flex-direction:column; align-items:stretch;
+    gap:8px; padding:12px clamp(12px,2vw,24px); overflow:visible;
+    border-right:0; border-bottom:1px solid var(--line);
+  }
+  .brand { align-self:flex-start; padding:2px 8px 7px; }
+  .sidebar nav {
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+    width:100%; gap:8px; padding:0; min-width:0;
+  }
+  .sidebar .nav-btn, .sidebar .nav-btn.is-active {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    min-width:0; min-height:44px; padding:10px 9px;
+    white-space:normal; overflow-wrap:anywhere;
+    text-align:center; line-height:1.3; font-size:12px;
+  }
+  .sidebar .nav-icon { display:inline; flex:none; }
+  .sidebar-footer { display:none; }
+  .topbar { padding:12px clamp(13px,2vw,25px); min-height:64px; }
+  .content { max-width:100%; padding:22px clamp(13px,2vw,25px); }
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  /* Tablet tables retain headers and scroll within their own panel. */
+  .table-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+  .table-scroll table { min-width:760px; }
+  .toolbar { gap:10px; }
+  .panel, .stat, .heading { min-width:0; }
+}
+@media (max-width: 760px) {
+  .sidebar { padding:10px 12px 12px; gap:4px; }
+  .brand { padding:2px 5px 7px; }
+  .sidebar nav { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .sidebar .nav-btn, .sidebar .nav-btn.is-active {
+    min-height:45px; justify-content:flex-start; text-align:left;
+    padding:10px 12px; font-size:12px;
+  }
+  .sidebar .nav-icon { display:inline; font-size:16px; }
+  .topbar { display:flex; flex-wrap:wrap; gap:9px; padding:12px; }
+  .topbar .crumb { display:none; }
+  .top-actions { order:2; flex:1 1 100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .top-actions button { width:100%; min-width:0; min-height:44px; white-space:normal; padding:9px 7px; overflow-wrap:anywhere; }
+  .bix-preferences { order:1; flex:1 1 100%; justify-content:flex-end; }
+  .bix-language, .bix-theme { min-height:44px; }
+  .content { padding:16px 11px 26px; }
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .stat { padding:12px; }
+  .toolbar input[type=search], .toolbar select { max-width:100%; min-width:0; min-height:44px; }
+  .filter, .session-tab, .pagination button { min-height:44px; }
+  .session-tabs { gap:7px; }
+  .session-tab { min-width:0; white-space:normal; }
+  /* Preserve stacked mobile rows; do not re-enable tablet min-width. */
+  .table-scroll { overflow-x:visible; }
+  .table-scroll table { min-width:0; }
+  .pagination { flex-wrap:wrap; justify-content:center; text-align:center; }
+  .pagination > div { justify-content:center; }
+  .actions-inline, .unifi-session-actions { max-width:100%; justify-content:flex-end; }
+  .actions-inline button, .unifi-session-actions button, .stale-close-now { min-height:44px; white-space:normal; }
+  .disconnect-dialog { max-height:calc(100dvh - 20px); width:min(460px,calc(100vw - 20px)); }
+  .disconnect-dialog-content { padding:18px 15px; }
+  .disconnect-dialog-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .disconnect-dialog-actions button { min-height:44px; flex:1 1 145px; }
+  input, select, textarea { font-size:max(16px,1em); }
+  :focus-visible { outline-offset:2px; }
+}
+@media (max-width: 390px) {
+  .brand-name > span { display:block !important; }
+  .sidebar .nav-btn, .sidebar .nav-btn.is-active { font-size:11px; padding:9px 7px; }
+  .stat { padding:10px; }
+  .stat-label { font-size:11px; }
+  .top-actions button { font-size:11px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}

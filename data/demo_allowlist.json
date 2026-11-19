@@ -1,0 +1,21 @@
+{
+  "source": "demo_not_verified_production",
+  "phones": [
+    {
+      "uuid": "demo-phone-001",
+      "cn": "demo_phone15"
+    },
+    {
+      "uuid": "demo-phone-002",
+      "cn": "demo_phone11"
+    },
+    {
+      "uuid": "demo-phone-003",
+      "cn": "Lenovo"
+    },
+    {
+      "uuid": "demo-phone-004",
+      "cn": "Secondary_Pad8Pro"
+    }
+  ]
+}

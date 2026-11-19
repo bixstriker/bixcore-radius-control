@@ -1,0 +1,15 @@
+[Unit]
+Description=BiXCore local manual snapshot refresh trigger
+
+[Socket]
+ListenStream=/srv/bixcore-radius-control/private/refresh_socket/trigger.sock
+Accept=yes
+# Socket inode is root-owned (UID 10001 only exists inside Docker).
+# Access is restricted by the parent directory: UID 10001, mode 0700.
+SocketMode=0666
+DirectoryMode=0700
+MaxConnections=2
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
