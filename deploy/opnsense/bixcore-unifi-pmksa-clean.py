@@ -20,7 +20,6 @@ import time
 
 NAS = {"192.0.2.4": "UniFi1", "192.0.2.5": "UniFi2"}
 DB = "/usr/local/etc/raddb/freeradius.db"
-CLIENTS = "/usr/local/etc/raddb/clients.conf"
 MAC = re.compile(r"[0-9a-f]{2}(?::[0-9a-f]{2}){5}\Z")
 BSSID = MAC
 SID = re.compile(r"[A-Za-z0-9._:@/+=-]{1,64}\Z")
@@ -102,22 +101,50 @@ def verify_identity(conn: sqlite3.Connection, data: dict, now: int) -> str:
     return src[0][0]
 
 
-def secret_for(nas: str) -> str:
-    text = Path(CLIENTS).read_text(encoding="utf8")
-    name = NAS[nas]
-    matches = re.findall(
-        r'(?ms)^\s*client\s+["\']?' + re.escape(name) + r'["\']?\s*\{(.*?)^\s*\}',
-        text,
-    )
-    if len(matches) != 1:
-        raise Rejected("NAS_CLIENT_MISSING")
-    secret = re.search(r"(?m)^\s*secret\s*=\s*(\S(?:.*\S)?)\s*$", matches[0])
-    if not secret:
-        raise Rejected("NAS_SECRET_MISSING")
-    value = secret.group(1).split(" #", 1)[0].strip().strip("\"'")
-    if not value:
-        raise Rejected("NAS_SECRET_MISSING")
-    return value
+# RadSec TLS profiles carry the RFC 6614 fixed RADIUS shared secret.
+# UniFi also provisions this same value as DAS secret on this installation.
+# Only trust the exact configured UniFi TLS client, never FreeRADIUS clients.conf
+# or the backend UDP server Secret in radsecproxy.
+RADSEC_CONFIG=Path("/usr/local/etc/radsecproxy.conf")
+RADSEC_CLIENTS={"192.0.2.4":"UniFi_AP1","192.0.2.5":"UniFi_AP2"}
+TLS_PROFILE="example_radsec_tls"
+
+def secret_for(nas):
+    if nas not in NAS or nas not in RADSEC_CLIENTS:
+        raise ValueError("INVALID_NAS")
+    path=RADSEC_CONFIG
+    if path.is_symlink():
+        raise ValueError("RADSEC_CONFIG_UNTRUSTED")
+    st=path.stat()
+    if not path.is_file() or (os.name=="posix" and (st.st_uid!=0 or st.st_mode & 0o022)) or st.st_size>65536:
+        raise ValueError("RADSEC_CONFIG_UNTRUSTED")
+    text=path.read_text(encoding="utf-8")
+    # radsecproxy syntax: client NAME { ... }; comments and directives
+    # are line-oriented. No name, IP, type or TLS-profile fallbacks.
+    blocks=re.findall(r"(?ms)^\s*client\s+([A-Za-z0-9_-]+)\s*\{([^{}]*)^\s*\}",text)
+    wanted=RADSEC_CLIENTS[nas]
+    found=[body for name,body in blocks if name==wanted]
+    if len(found)!=1:
+        raise ValueError("RADSEC_CLIENT_MISSING_OR_AMBIGUOUS")
+    def values(body, key):
+        found_values=[]
+        for line in body.splitlines():
+            line=line.strip()
+            if not line or line.startswith("#"):
+                continue
+            match=re.fullmatch(r"([A-Za-z]+)\s+([^#\s]+)\s*(?:#.*)?",line)
+            if match and match.group(1).lower()==key.lower():
+                found_values.append(match.group(2).strip().strip(chr(34)+chr(39)))
+        return found_values
+    attrs={k:values(found[0],k) for k in ("Host","Type","Tls","Secret")}
+    if (attrs["Host"]!=[nas+"/32"] or
+        [x.lower() for x in attrs["Type"]]!=["tls"] or
+        attrs["Tls"]!=[TLS_PROFILE] or attrs["Secret"]):
+        raise ValueError("RADSEC_CLIENT_CONFIG_MISMATCH")
+    profiles=re.findall(r"(?ms)^\s*tls\s+([A-Za-z0-9_-]+)\s*\{([^{}]*)^\s*\}",text)
+    if len([x for x,_ in profiles if x==TLS_PROFILE])!=1:
+        raise ValueError("RADSEC_TLS_PROFILE_MISSING")
+    return "radsec"  # RFC 6614 section 2.3: TLS shared secret
 
 
 def execute(data: dict, *, db_path: str = DB, now: int | None = None,

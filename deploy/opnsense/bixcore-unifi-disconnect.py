@@ -12,10 +12,13 @@ import tempfile
 import time
 
 DB="/usr/local/etc/raddb/freeradius.db"
-CLIENTS="/usr/local/etc/raddb/clients.conf"
 NAS={"192.0.2.4":"UniFi1","192.0.2.5":"UniFi2"}
 SID=re.compile(r"^[A-Za-z0-9._:@/+=-]{1,64}$")
 ATTR=re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=\s*(.*?)\s*$")
+# Allowlisted backend accounting sender for locally terminated RadSec; never search arbitrary dirs.
+RADSEC_PROXY_SRC="192.0.2.1"
+DETAIL_ROOT=Path("/var/log/radacct")
+DETAIL_MAX_BYTES=8*1024*1024
 
 def result(state,reason="",**extra):
     print(json.dumps({"result":state,"reason":reason,**extra},separators=(",",":")))
@@ -69,43 +72,113 @@ def accounting(nas,sid,mac,expected_user=None):
             raise ValueError("SESSION_CHANGED_BY_ROAMING")
     finally:db.close()
 
+def _detail_identifiers(path,nas,sid,mac):
+    """Return all identifiers matching one SQLite-validated identity in one bounded file."""
+    if not path.is_file() or path.is_symlink():
+        return set()
+    size=path.stat().st_size
+    with path.open("rb") as fh:
+        fh.seek(max(0,size-DETAIL_MAX_BYTES))
+        if size>DETAIL_MAX_BYTES:
+            fh.readline()  # discard incomplete first record
+        data=fh.read().decode("utf-8","replace")
+    found=set()
+    for block in re.split(r"\r?\n\s*\r?\n",data):
+        attrs={}
+        for line in block.splitlines():
+            match=ATTR.match(line)
+            if match:
+                value=match.group(2).strip()
+                if value.startswith('"') and value.endswith('"'):
+                    value=value[1:-1]
+                attrs[match.group(1)]=value
+        if (attrs.get("Acct-Session-Id")!=sid or attrs.get("NAS-IP-Address")!=nas
+                or normmac(attrs.get("Calling-Station-Id"))!=mac):
+            continue
+        ident=attrs.get("NAS-Identifier","").strip()
+        if not ident or len(ident)>64 or not re.fullmatch(r"[A-Za-z0-9_.:-]+",ident):
+            raise ValueError("NAS_IDENTIFIER_INVALID")
+        found.add(ident)
+    return found
+
+
 def identifier(nas,sid,mac):
-    directory=Path("/var/log/radacct")/nas
-    if not directory.is_dir():raise ValueError("ACCOUNTING_DETAIL_MISSING")
-    for offset in (0,1):
-        fn=directory/(datetime.datetime.now()-datetime.timedelta(days=offset)).strftime("detail-%Y%m%d")
-        if not fn.is_file():continue
-        size=fn.stat().st_size
-        with fn.open("rb") as fh:
-            fh.seek(max(0,size-8*1024*1024))
-            if size>8*1024*1024:fh.readline()
-            data=fh.read().decode("utf-8","replace")
-        for block in reversed(re.split(r"\r?\n\s*\r?\n",data)):
-            attrs={}
-            for line in block.splitlines():
-                m=ATTR.match(line)
-                if m:
-                    v=m.group(2).strip()
-                    if v.startswith('"') and v.endswith('"'):v=v[1:-1]
-                    attrs[m.group(1)]=v
-            if attrs.get("Acct-Session-Id")!=sid or attrs.get("NAS-IP-Address")!=nas:
-                continue
-            if normmac(attrs.get("Calling-Station-Id"))!=mac:continue
-            ident=attrs.get("NAS-Identifier","").strip()
-            if ident and len(ident)<=64 and re.fullmatch("[A-Za-z0-9_.:-]+",ident):
-                return ident
-    raise ValueError("NAS_IDENTIFIER_NOT_FOUND")
+    """Resolve identifier only for a proven NAS/SID/MAC from direct UDP or RadSec.
+
+    Both sender directories are a fixed allowlist; conflicting identifiers fail closed.
+    Detail path must never be supplied by a caller. SQLite session validation precedes
+    this call and is repeated by the forced-command entry point for every action.
+    """
+    if nas not in NAS or not isinstance(sid,str) or not SID.fullmatch(sid):
+        raise ValueError("INVALID_NAS_OR_SESSION")
+    if not re.fullmatch("[0-9a-f]{12}",mac):
+        raise ValueError("INVALID_MAC")
+    found=set()
+    dirs=(nas,RADSEC_PROXY_SRC)
+    saw_directory=False
+    for sender in dirs:
+        directory=DETAIL_ROOT/sender
+        if directory.is_symlink():
+            raise ValueError("ACCOUNTING_DETAIL_UNTRUSTED_PATH")
+        if not directory.is_dir():
+            continue
+        saw_directory=True
+        for offset in (0,1):
+            fn=directory/(datetime.datetime.now()-datetime.timedelta(days=offset)).strftime("detail-%Y%m%d")
+            found.update(_detail_identifiers(fn,nas,sid,mac))
+            if len(found)>1:
+                raise ValueError("NAS_IDENTIFIER_AMBIGUOUS")
+    if not saw_directory:
+        raise ValueError("ACCOUNTING_DETAIL_MISSING")
+    if len(found)!=1:
+        raise ValueError("NAS_IDENTIFIER_NOT_FOUND")
+    return next(iter(found))
+
+# RadSec TLS profiles carry the RFC 6614 fixed RADIUS shared secret.
+# UniFi also provisions this same value as DAS secret on this installation.
+# Only trust the exact configured UniFi TLS client, never FreeRADIUS clients.conf
+# or the backend UDP server Secret in radsecproxy.
+RADSEC_CONFIG=Path("/usr/local/etc/radsecproxy.conf")
+RADSEC_CLIENTS={"192.0.2.4":"UniFi_AP1","192.0.2.5":"UniFi_AP2"}
+TLS_PROFILE="example_radsec_tls"
 
 def secret_for(nas):
-    text=Path(CLIENTS).read_text(encoding="utf-8")
-    name=NAS[nas]
-    matches=re.findall(r"(?ms)^\s*client\s+[\"']?"+re.escape(name)+r"[\"']?\s*\{(.*?)^\s*\}",text)
-    if len(matches)!=1:raise ValueError("NAS_CLIENT_MISSING")
-    m=re.search(r"(?m)^\s*secret\s*=\s*(\S(?:.*\S)?)\s*$",matches[0])
-    if not m:raise ValueError("NAS_SECRET_MISSING")
-    secret=m.group(1).split(" #",1)[0].strip().strip("\"'")
-    if not secret:raise ValueError("NAS_SECRET_EMPTY")
-    return secret
+    if nas not in NAS or nas not in RADSEC_CLIENTS:
+        raise ValueError("INVALID_NAS")
+    path=RADSEC_CONFIG
+    if path.is_symlink():
+        raise ValueError("RADSEC_CONFIG_UNTRUSTED")
+    st=path.stat()
+    if not path.is_file() or (os.name=="posix" and (st.st_uid!=0 or st.st_mode & 0o022)) or st.st_size>65536:
+        raise ValueError("RADSEC_CONFIG_UNTRUSTED")
+    text=path.read_text(encoding="utf-8")
+    # radsecproxy syntax: client NAME { ... }; comments and directives
+    # are line-oriented. No name, IP, type or TLS-profile fallbacks.
+    blocks=re.findall(r"(?ms)^\s*client\s+([A-Za-z0-9_-]+)\s*\{([^{}]*)^\s*\}",text)
+    wanted=RADSEC_CLIENTS[nas]
+    found=[body for name,body in blocks if name==wanted]
+    if len(found)!=1:
+        raise ValueError("RADSEC_CLIENT_MISSING_OR_AMBIGUOUS")
+    def values(body, key):
+        found_values=[]
+        for line in body.splitlines():
+            line=line.strip()
+            if not line or line.startswith("#"):
+                continue
+            match=re.fullmatch(r"([A-Za-z]+)\s+([^#\s]+)\s*(?:#.*)?",line)
+            if match and match.group(1).lower()==key.lower():
+                found_values.append(match.group(2).strip().strip(chr(34)+chr(39)))
+        return found_values
+    attrs={k:values(found[0],k) for k in ("Host","Type","Tls","Secret")}
+    if (attrs["Host"]!=[nas+"/32"] or
+        [x.lower() for x in attrs["Type"]]!=["tls"] or
+        attrs["Tls"]!=[TLS_PROFILE] or attrs["Secret"]):
+        raise ValueError("RADSEC_CLIENT_CONFIG_MISMATCH")
+    profiles=re.findall(r"(?ms)^\s*tls\s+([A-Za-z0-9_-]+)\s*\{([^{}]*)^\s*\}",text)
+    if len([x for x,_ in profiles if x==TLS_PROFILE])!=1:
+        raise ValueError("RADSEC_TLS_PROFILE_MISSING")
+    return "radsec"  # RFC 6614 section 2.3: TLS shared secret
+
 
 def disconnect(nas,sid,mac,expected_user=None):
     accounting(nas,sid,mac,expected_user)
