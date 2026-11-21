@@ -1,3 +1,10 @@
+## v1.0.2 candidate update — radsecproxy TLS client DAS resolution
+
+- Both UniFi DAS helpers validate exact RadSec TLS clients from the generated
+  radsecproxy config before selecting the RFC 6614 fixed value. No backend UDP
+  or legacy FreeRADIUS secrets, no additional credentials store.
+- 15 additional mocked tests (288 total, one skipped); real ACK pending.
+
 ## v1.0.2 candidate — not released
 
 - UniFi RadSec/direct UDP Accounting Detail compatibility.

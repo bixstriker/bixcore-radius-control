@@ -40,3 +40,33 @@ restricted per-AP DAS secret source. Do not infer the DAS secret from the RadSec
 transport secret, accept unknown senders, disable authentication, or automatically
 retry a failed Disconnect. PMKSA uses the same legacy secret source and must be
 validated independently. This remains an **unreleased candidate**.
+
+## DAS secret selection from local radsecproxy configuration (candidate)
+
+On a production-style TLS deployment, the fixed RADIUS/TLS shared-secret
+value `radsec` is defined by RFC 6614. It need **not** be explicitly present
+in a TLS client section; the radsecproxy `server` UDP backend `Secret` is a
+*different credential* and is not used for DAS.
+
+The UniFi Disconnect and targeted PMKSA helpers now verify that their exact
+allowlisted client name and /32 source IP appear as `Type tls`, with the
+expected named TLS profile, in the local generated radsecproxy configuration.
+Only then do they select the standard `radsec` value for UniFi DAS.
+This mirrors the particular UniFi provisioning where the access point
+uses `radsec` for the UDP/3799 DAS dispatcher as well. It is **not** a
+general rule that every RadSec device uses the same DAS secret.
+
+The check rejects a missing or duplicate client, changed transport, wrong
+IP, wrong TLS profile, non-root-owned or writable configuration file (on
+POSIX), oversized file, or symlink. No fallback to FreeRADIUS
+`clients.conf` or the proxy's backend `Secret`, and no new secret file.
+Configuration names and example addresses in this public sample must be
+adapted by each operator. The previously supported direct-UDP Accounting
+Detail lookup remains, but this resolver requires an explicitly configured
+RadSec TLS client for DAS operations. A direct-UDP-only deployment needs
+a separate, reviewed credential source.
+
+15 additional mocked tests added. Full suite: 288 tests, one skipped.
+A private candidate installation was source-hash verified, but live
+Disconnect-ACK and PMKSA acceptance remain **pending**. No stable v1.0.2
+release is implied by this review branch.
