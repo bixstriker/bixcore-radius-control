@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -50,6 +51,9 @@ class TestRadSecDAS(unittest.TestCase):
     for module in self.modules:
        patcher=patch.object(module,"RADSEC_CONFIG",self.path)
        patcher.start();self.addCleanup(patcher.stop)
+       # A synthetic trusted OS fixture; production root/permissions guard remains intact.
+       os_patch=patch.object(module,"os",SimpleNamespace(name="nt"))
+       os_patch.start();self.addCleanup(os_patch.stop)
  def assert_error(self,configuration,error="RADSEC_"):
     self.path.write_text(configuration,encoding="utf8")
     for module in self.modules:
