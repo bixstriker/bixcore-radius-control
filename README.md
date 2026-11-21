@@ -1,3 +1,16 @@
+# Public source release v1.0.2 — RadSec UniFi DAS maintenance (2026-11-21)
+
+This is the **sanitized public source + helpers**, not a new Docker
+image. Proven pilot operations include UniFi Disconnect-ACK/PMKSA
+cleanup, Omada guarded wired Disconnect and UniFi EAPOL_REAUTH.
+Existing NAS images remain web 1.0.1, control 0.10.9.1,
+sync 0.10.4. See [release notes](docs/RELEASE_V1.0.2.md).
+Any older v1.0.1/current language below describes the earlier
+Docker/public-release baseline.
+
+
+---
+
 # BiXCore RADIUS Control
 
 BiXCore RADIUS Control is a web console for FreeRADIUS/OPNsense accounting and

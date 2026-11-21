@@ -1,3 +1,15 @@
+# Final acceptance update — 2026-11-21
+
+Pilot v1.0.2 compatible UniFi DAS helper changes have passed live
+Disconnect-ACK/PMKSA and EAPOL_REAUTH tests. Omada wired pilot also
+passed ACK+Accounting cleanup. The earlier "unresolved", "pending",
+"candidate" statements below are **historical observations**,
+not the latest acceptance result. See
+[release v1.0.2](RELEASE_V1.0.2.md).
+
+
+---
+
 # UniFi RadSec compatibility — v1.0.2 candidate (not released)
 
 This change lets the restricted UniFi Disconnect helper find NAS-Identifier

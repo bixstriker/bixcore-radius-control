@@ -1,3 +1,14 @@
+# Current source release note — v1.0.2
+
+These demonstration quickstart steps apply to the sanitized v1.0.2
+source tree. A new v1.0.2 Docker image is not provided. RadSecProxy
+DAS fixes require exact local TLS client mapping and correspondingly
+configured UniFi DAS secret. See
+[release notes](RELEASE_V1.0.2.md).
+
+
+---
+
 # Getting started
 
 The public source distribution is an **adaptation reference** from a working

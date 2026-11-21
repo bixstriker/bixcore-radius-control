@@ -1,3 +1,16 @@
+# Current source release note — v1.0.2
+
+The v1.0.2 release updates the RadSec-aware restricted UniFi DAS
+helpers. The production deployment referenced here intentionally
+still runs v1.0.1 web / v0.10.9.1 control / v0.10.4 sync.
+`compose.v1.0.1.release.yaml` is therefore still the appropriate
+documented production Docker composition; NO 1.0.2 image
+exists in this maintenance release. Operator must adapt sanitized
+RadSec TLS client names, IP addresses and profiles.
+
+
+---
+
 # Architecture and configuration
 
 This is an **example**. All `192.0.2.x` addresses, `example.test` names,
