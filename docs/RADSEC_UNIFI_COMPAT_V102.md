@@ -24,3 +24,19 @@ Testing: 15 new synthetic unit tests; private code base has 273 tests total
 (272 pass, one skipped). Live read-only accounting lookup verified on
 a private installation; full real-world Disconnect and PMKSA acceptance
 **not yet completed**. This is a review branch, **not v1.0.2 stable**.
+
+## Field acceptance finding (21 November 2026; unresolved)
+
+A controlled user-triggered Disconnect at a RadSec-enabled UniFi access point
+reached its UDP/3799 listener. The AP-side DAS dispatcher logged a **shared-secret
+mismatch**, dropped the request, and returned no ACK. The current helper reads its
+per-AP DAS secret from the RADIUS client definitions, which may no longer match
+separately provisioned DAS credentials after RadSec migration. No active secret
+was modified. This finding is independent of the fixed Accounting Detail path.
+
+Required next step: compare the DAS secret provisioned on each AP against the
+respective server-side source without disclosing it, then design a dedicated
+restricted per-AP DAS secret source. Do not infer the DAS secret from the RadSec
+transport secret, accept unknown senders, disable authentication, or automatically
+retry a failed Disconnect. PMKSA uses the same legacy secret source and must be
+validated independently. This remains an **unreleased candidate**.
