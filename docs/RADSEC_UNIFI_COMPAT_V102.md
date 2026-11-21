@@ -70,3 +70,21 @@ a separate, reviewed credential source.
 A private candidate installation was source-hash verified, but live
 Disconnect-ACK and PMKSA acceptance remain **pending**. No stable v1.0.2
 release is implied by this review branch.
+
+## Field acceptance: three control operations (2026-11-21)
+
+- UniFi active station: guarded Disconnect returned authenticated ACK;
+  per-station PMKSA cleanup returned complete; old accounting row
+  closed and successor session started. A new PMKSA entry for the
+  newly authenticated connection is expected and was observed.
+- Omada wired pilot port: authenticated Disconnect-ACK, controlled
+  close of previous accounting row and successor Start. Protected
+  independent wired client was unaffected.
+- UniFi EAPOL_REAUTH: AP command accepted, prior Accounting-Stop
+  and new Accounting-Start observed; two APs scanned afterward,
+  unique authorized association confirmed. This flow is independent
+  of the RadSec UDP/3799 DAS secret resolver.
+
+These results substantiate the targeted pilot acceptance, not a blanket
+claim about all clients, FT-EAP cache invalidation or TLS resumption.
+Both review branches still require deliberate release/merge management.
