@@ -1,62 +1,53 @@
-# Current source release note — v1.0.2
+# Configuration and deployment boundaries — public v1.0.2
 
-The v1.0.2 release updates the RadSec-aware restricted UniFi DAS
-helpers. The production deployment referenced here intentionally
-still runs v1.0.1 web / v0.10.9.1 control / v0.10.4 sync.
-`compose.v1.0.1.release.yaml` is therefore still the appropriate
-documented production Docker composition; NO 1.0.2 image
-exists in this maintenance release. Operator must adapt sanitized
-RadSec TLS client names, IP addresses and profiles.
+This is a sanitized source tree with example addresses and
+client names. A Git checkout alone cannot reproduce
+a private installation: operating-system settings,
+NAS-local activated Compose, restricted SSH keys,
+RADIUS CA material, private databases and backups
+are deliberately absent.
 
+## Current release scope
 
----
+v1.0.2 changes restricted UniFi OPNsense helper sources
+for RadSec compatibility. No `1.0.2-web` Docker image
+was built or installed in the verified pilot.
+The installed reference system continues to use:
+web `1.0.1-web`, control `0.10.9.1-worker`,
+sync `0.10.4-worker`. `compose.v1.0.1.release.yaml`
+is a template, **not** a drop-in live replacement.
 
-# Architecture and configuration
+## External dependencies and required adaptation
 
-This is an **example**. All `192.0.2.x` addresses, `example.test` names,
-MACs beginning with `02:00:00` and the `/srv/bixcore-radius-control` path are
-synthetic placeholders for documentation and unit tests.
+1. RadSecProxy TLS listener, certificates and exact
+   client blocks for each known AP. Verify AP identity
+   and destination, TLS type, host /32 and TLS profile.
+2. FreeRADIUS EAP-TLS backend and Accounting database.
+   Preserve the original NAS-IP-Address in proxy detail.
+3. The actual AP DAS receiver's source allowlist,
+   UDP/3799 and shared secret. Only use `radsec` for
+   DAS when it is independently confirmed on that AP.
+4. Source-restricted SSH forced-command keys,
+   protected files, host-key pinning, audit storage
+   and worker permissions.
+5. Physical or virtual management network and
+   rollback access; never alter an active system
+   merely to match example files in this repository.
 
-## Data path
+The RadSec client block's absence of an explicit `Secret`
+does not license reading the local backend UDP
+`server Secret`. The exact TLS-client mapping is
+validated by both UniFi helpers; mismatch fails closed.
+Do not copy real secret values into public files.
 
-FreeRADIUS/OPNsense -> restricted, read-only exporter -> sync worker ->
-JSON snapshot -> web UI. Actions travel from authenticated UI -> constrained
-control worker / SSH forced command -> specific network access server.
-Only the server-side helper decides whether a requested target still matches
-the authoritative Accounting record.
+## Synthetic validation
 
-## Adaptation checklist
+```sh
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -q
+docker compose -f compose.demo.yaml config --quiet
+```
 
-1. Choose your real NAS, OPNsense, AP and switch addresses. Update the
-   installation-specific constants in `app/logic.py`,
-   `app/unifi_workflow.py`, `app/omada_wired.py`, `sync/` and the
-   `deploy/opnsense/` helpers. Audit `app/main.py` for allowed NAS lists.
-2. Set `BIX_CONTROL_ORIGIN` to the exact HTTPS origin for CSRF protection.
-   The included `https://radius.example.test` is not reachable.
-3. Create SSH key pairs on your administrator host and set restrictive
-   `authorized_keys` command/from/restrict options on OPNsense. Pin host keys.
-4. Create secret files with host owner-only permissions, outside this repo.
-5. Configure FreeRADIUS client definitions, CoA shared secrets, EAP-TLS/LDAP
-   policies, VLAN mappings, OPNsense restricted helpers and NAS port IDs.
-6. Provision the Docker runtime root (default example:
-   `/srv/bixcore-radius-control`), exact UID/GID file ownerships, sockets,
-   audit store and snapshot directories. Prefer separate web, sync and
-   control services; do not expose workers to the internet.
-7. Confirm `docker compose -f compose.v1.0.1.release.yaml config --quiet`
-   **with a complete local runtime and selected environment**, then test
-   authentication and read-only snapshot first.
-8. Activate dangerous controls only after authorized live tests of exact
-   target matching and authenticated ACK; Omada flag defaults OFF.
-
-## Rollback and upgrade
-
-Record image SHA-256, activated Compose and secret-file permissions before
-every upgrade. For a UI-only change, recreate only the web container;
-preserve the audit and FreeRADIUS SQLite DB. Never restore a stale Accounting
-database merely to roll back a code release.
-
-## Scope limitations
-
-This release is the generalizable source of a specific installation. It does
-not ship a default OPNsense plugin or automated installer, and network-specific
-addresses are still defaults in some modules. Adaptation is required.
+[Quickstart](QUICKSTART.md) ·
+[Release](RELEASE_V1.0.2.md) ·
+[Security](SECURITY.md).

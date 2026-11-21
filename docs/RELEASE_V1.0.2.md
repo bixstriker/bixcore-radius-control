@@ -21,7 +21,7 @@ customer session identifiers are published.
 
 ## Tests and acceptance
 
-- 288 tests (287 passed, 1 skipped), and public CI passing.
+- 288 tests (287 passed, 1 skipped); public main CI passed.
 - A real UniFi active station produced verified Disconnect-ACK
   and PMKSA cleanup; a replacement Accounting session followed.
 - A real wired Omada pilot port produced ACK and guarded old

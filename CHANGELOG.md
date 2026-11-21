@@ -1,33 +1,25 @@
-## v1.0.2 candidate update — radsecproxy TLS client DAS resolution
+# BiXCore RADIUS Control — public changelog
 
-- Both UniFi DAS helpers validate exact RadSec TLS clients from the generated
-  radsecproxy config before selecting the RFC 6614 fixed value. No backend UDP
-  or legacy FreeRADIUS secrets, no additional credentials store.
-- 15 additional mocked tests (288 total, one skipped); real ACK pending.
+## v1.0.2 (2026-11-21): accepted RadSec UniFi helper maintenance
 
-## v1.0.2 candidate — not released
+- UniFi Disconnect reads permitted RadSecProxy-source Accounting
+  Detail directories with exact original NAS, SID, MAC and unique
+  NAS-Identifier validation.
+- Both UniFi DAS helpers resolve the exact RadSec TLS client
+  and TLS profile before selecting the fixed RFC 6614 value.
+  Backend UDP Secret and legacy FreeRADIUS clients.conf
+  are explicitly excluded.
+- Targeted live acceptance: UniFi Disconnect ACK/PMKSA,
+  Omada wired ACK/guarded cleanup, UniFi EAPOL_REAUTH
+  with successor Accounting sessions.
+- Full suites: 288 tests (287 pass, 1 skipped), successful CI.
+- Source/helper release only; no newly deployed Docker image.
 
-- UniFi RadSec/direct UDP Accounting Detail compatibility.
-- Strict NAS/SID/MAC/NAS-Identifier validation, ambiguous identity rejection.
-- New mocked tests; production live acceptance pending.
-- See [technical notes](docs/RADSEC_UNIFI_COMPAT_V102.md).
+## Previous releases
 
-# Changelog — public distribution
+v1.0.1-public.1/.2/.3: prior sanitized v1.0.1 web/control/
+sync baseline, layout, authentication and release audit.
+The prior detailed chronological changelog remains
+available in Git history.
 
-## v1.0.1-public.3 — 2026-11-19
-
-- First completed MIT-licensed source distribution.
-- Root `LICENSE` and copyright attribution.
-- Dependency license inventory, user quickstart and configuration warnings.
-- Contribution guidelines and private vulnerability reporting instructions.
-- Independent public Git history; real IPs, hostnames, MACs and secrets excluded.
-- GitHub Actions tests and static JS/Python validation.
-
-## v1.0.1-public.2 — 2026-11-19
-
-- Privacy-sanitized v1.0.1 source snapshot; CI portability fixes.
-- FastAPI web interface with desktop/mobile layouts, four languages, FreeRADIUS
-  Accounting and conditional UniFi/Omada control workflows.
-
-**Compatibility note:** the public release's example constants are deliberately
-not compatible with the private, deployed installation.
+[Public v1.0.2 release](docs/RELEASE_V1.0.2.md).

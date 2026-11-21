@@ -1,102 +1,76 @@
-# Final acceptance update — 2026-11-21
+# UniFi RadSec / DAS compatibility — accepted v1.0.2
 
-Pilot v1.0.2 compatible UniFi DAS helper changes have passed live
-Disconnect-ACK/PMKSA and EAPOL_REAUTH tests. Omada wired pilot also
-passed ACK+Accounting cleanup. The earlier "unresolved", "pending",
-"candidate" statements below are **historical observations**,
-not the latest acceptance result. See
-[release v1.0.2](RELEASE_V1.0.2.md).
+**Current as of 21 November 2026:** the targeted
+pilot has passed. Earlier failures below were resolved
+before the v1.0.2 source/helper release.
 
+## Problem 1 — Accounting Detail source
 
----
+After switching an AP to RadSec, FreeRADIUS may record
+Accounting Detail under the **proxy's source IP directory**
+instead of the original AP IP directory, although the RADIUS
+NAS-IP-Address attribute still identifies the original AP.
 
-# UniFi RadSec compatibility — v1.0.2 candidate (not released)
+The restricted Disconnect helper now searches only the
+explicitly allowlisted original NAS and local proxy source
+directories, reads bounded current/previous Detail files,
+and requires exact NAS-IP-Address, MAC, SID and a unique
+NAS-Identifier. An untrusted requested path is never used.
 
-This change lets the restricted UniFi Disconnect helper find NAS-Identifier
-in both **direct UDP** and **locally terminated RadSec** Accounting Detail.
-No reliance on an arbitrary packet-source directory, a whole-tree search, or
-unsafe fallback to an unverified identifier.
+## Problem 2 — DAS shared secret
 
-- Static allowlist of source NAS IP and local RadSecProxy backend IP
-  (public example addresses: 192.0.2.4, 192.0.2.5, 192.0.2.1).
-- Exact NAS-IP-Address, Acct-Session-Id and Calling-Station-Id matching.
-- Require one unambiguous valid NAS-Identifier; different identifiers
-  fail closed, as do missing data, malformed identities and symlink paths.
-- Read bounded current/prior-day file tails (max 8 MiB/file).
-- Preexisting read-only SQL session/freshness/roaming validation
-  and exact DAS UDP/3799 + authenticated ACK checks stay unchanged.
-- No change to UniFi EAPOL_REAUTH, PMKSA helper, Omada wired helper,
-  LDAP, client EAP-TLS, certificates or RADIUS listener configuration.
+The earlier helper derived the AP secret from FreeRADIUS
+`clients.conf`. After RadSec migration that source was
+obsolete. AP logs recorded a DAS secret mismatch and
+dropped the UDP/3799 Disconnect request without ACK.
 
-The public integration is **source only**, with synthetic NAS identifiers
-and no private host inventory. Operators must review and adapt backend proxy
-address, NAS mapping and secrets to their own installation.
+Under RFC 6614, RADIUS/TLS uses the fixed string
+`radsec`, whether or not a TLS-client block explicitly
+contains a `Secret` property. The proxy's local backend
+UDP `server Secret` is separate and **must not** be used
+as the AP DAS secret.
 
-Testing: 15 new synthetic unit tests; private code base has 273 tests total
-(272 pass, one skipped). Live read-only accounting lookup verified on
-a private installation; full real-world Disconnect and PMKSA acceptance
-**not yet completed**. This is a review branch, **not v1.0.2 stable**.
+Both UniFi helpers now validate the *exact* RadSec TLS
+client name, IP /32, `Type tls` and TLS profile in the
+generated local radsecproxy configuration; only then
+can they select `radsec` for DAS. This is valid for the
+verified deployment because the AP's actual DAS dispatcher
+also uses `radsec`. **RFC 6614 does not require every
+vendor's UDP DAS implementation to share this value.**
 
-## Field acceptance finding (21 November 2026; unresolved)
+Missing, duplicate, untrusted, incorrectly mapped or
+non-TLS client configurations fail closed. No fallback
+to old FreeRADIUS clients or to the proxy backend Secret;
+no new secret file. Operators must substitute their
+own approved AP names/IPs/TLS profile and independently
+verify the DAS credential.
 
-A controlled user-triggered Disconnect at a RadSec-enabled UniFi access point
-reached its UDP/3799 listener. The AP-side DAS dispatcher logged a **shared-secret
-mismatch**, dropped the request, and returned no ACK. The current helper reads its
-per-AP DAS secret from the RADIUS client definitions, which may no longer match
-separately provisioned DAS credentials after RadSec migration. No active secret
-was modified. This finding is independent of the fixed Accounting Detail path.
+## Functional acceptance
 
-Required next step: compare the DAS secret provisioned on each AP against the
-respective server-side source without disclosing it, then design a dedicated
-restricted per-AP DAS secret source. Do not infer the DAS secret from the RadSec
-transport secret, accept unknown senders, disable authentication, or automatically
-retry a failed Disconnect. PMKSA uses the same legacy secret source and must be
-validated independently. This remains an **unreleased candidate**.
+On 21 November 2026, an authorized UniFi pilot station
+received Disconnect-ACK and targeted PMKSA cleanup,
+followed by a new Accounting session. A wired Omada
+pilot produced ACK and guarded cleanup after a
+matching successor Start; another active switchport
+was untouched. A separate UniFi device accepted
+EAPOL_REAUTH and had a subsequent Accounting Stop/Start.
 
-## DAS secret selection from local radsecproxy configuration (candidate)
+A newly associated station's new PMKSA entry is expected.
+Do not mistake it for failure to purge the old PMKSA.
+EAPOL_REAUTH is an AP control flow independent of the
+RadSec DAS secret fix.
 
-On a production-style TLS deployment, the fixed RADIUS/TLS shared-secret
-value `radsec` is defined by RFC 6614. It need **not** be explicitly present
-in a TLS client section; the radsecproxy `server` UDP backend `Secret` is a
-*different credential* and is not used for DAS.
+## Testing and release boundary
 
-The UniFi Disconnect and targeted PMKSA helpers now verify that their exact
-allowlisted client name and /32 source IP appear as `Type tls`, with the
-expected named TLS profile, in the local generated radsecproxy configuration.
-Only then do they select the standard `radsec` value for UniFi DAS.
-This mirrors the particular UniFi provisioning where the access point
-uses `radsec` for the UDP/3799 DAS dispatcher as well. It is **not** a
-general rule that every RadSec device uses the same DAS secret.
+Full suites: 288 tests (287 passed, 1 skipped);
+public CI on main passed. This public release is
+source/helpers and docs, **not** a Docker-image rollout.
+Tests are targeted, not proof of full 802.11r/FT-EAP,
+TLS resumption or policy Access-Reject revocation.
 
-The check rejects a missing or duplicate client, changed transport, wrong
-IP, wrong TLS profile, non-root-owned or writable configuration file (on
-POSIX), oversized file, or symlink. No fallback to FreeRADIUS
-`clients.conf` or the proxy's backend `Secret`, and no new secret file.
-Configuration names and example addresses in this public sample must be
-adapted by each operator. The previously supported direct-UDP Accounting
-Detail lookup remains, but this resolver requires an explicitly configured
-RadSec TLS client for DAS operations. A direct-UDP-only deployment needs
-a separate, reviewed credential source.
+[Release](RELEASE_V1.0.2.md) ·
+[Configuration](CONFIGURATION.md).
 
-15 additional mocked tests added. Full suite: 288 tests, one skipped.
-A private candidate installation was source-hash verified, but live
-Disconnect-ACK and PMKSA acceptance remain **pending**. No stable v1.0.2
-release is implied by this review branch.
+## Earlier incident timeline
 
-## Field acceptance: three control operations (2026-11-21)
-
-- UniFi active station: guarded Disconnect returned authenticated ACK;
-  per-station PMKSA cleanup returned complete; old accounting row
-  closed and successor session started. A new PMKSA entry for the
-  newly authenticated connection is expected and was observed.
-- Omada wired pilot port: authenticated Disconnect-ACK, controlled
-  close of previous accounting row and successor Start. Protected
-  independent wired client was unaffected.
-- UniFi EAPOL_REAUTH: AP command accepted, prior Accounting-Stop
-  and new Accounting-Start observed; two APs scanned afterward,
-  unique authorized association confirmed. This flow is independent
-  of the RadSec UDP/3799 DAS secret resolver.
-
-These results substantiate the targeted pilot acceptance, not a blanket
-claim about all clients, FT-EAP cache invalidation or TLS resumption.
-Both review branches still require deliberate release/merge management.
+The previous sanitized, chronological report remains [in the archive](history/RADSEC_V102_CHRONOLOGICAL_WORKLOG_SANITIZED_2026-11-21.md). Its intermediate pending labels were superseded by acceptance above.
