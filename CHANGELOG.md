@@ -1,3 +1,10 @@
+## v1.0.2 candidate — not released
+
+- UniFi RadSec/direct UDP Accounting Detail compatibility.
+- Strict NAS/SID/MAC/NAS-Identifier validation, ambiguous identity rejection.
+- New mocked tests; production live acceptance pending.
+- See [technical notes](docs/RADSEC_UNIFI_COMPAT_V102.md).
+
 # Changelog — public distribution
 
 ## v1.0.1-public.3 — 2026-11-19

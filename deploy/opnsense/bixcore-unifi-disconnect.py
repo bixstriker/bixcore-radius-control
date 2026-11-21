@@ -16,6 +16,10 @@ CLIENTS="/usr/local/etc/raddb/clients.conf"
 NAS={"192.0.2.4":"UniFi1","192.0.2.5":"UniFi2"}
 SID=re.compile(r"^[A-Za-z0-9._:@/+=-]{1,64}$")
 ATTR=re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=\s*(.*?)\s*$")
+# Allowlisted backend accounting sender for locally terminated RadSec; never search arbitrary dirs.
+RADSEC_PROXY_SRC="192.0.2.1"
+DETAIL_ROOT=Path("/var/log/radacct")
+DETAIL_MAX_BYTES=8*1024*1024
 
 def result(state,reason="",**extra):
     print(json.dumps({"result":state,"reason":reason,**extra},separators=(",",":")))
@@ -69,32 +73,67 @@ def accounting(nas,sid,mac,expected_user=None):
             raise ValueError("SESSION_CHANGED_BY_ROAMING")
     finally:db.close()
 
+def _detail_identifiers(path,nas,sid,mac):
+    """Return all identifiers matching one SQLite-validated identity in one bounded file."""
+    if not path.is_file() or path.is_symlink():
+        return set()
+    size=path.stat().st_size
+    with path.open("rb") as fh:
+        fh.seek(max(0,size-DETAIL_MAX_BYTES))
+        if size>DETAIL_MAX_BYTES:
+            fh.readline()  # discard incomplete first record
+        data=fh.read().decode("utf-8","replace")
+    found=set()
+    for block in re.split(r"\r?\n\s*\r?\n",data):
+        attrs={}
+        for line in block.splitlines():
+            match=ATTR.match(line)
+            if match:
+                value=match.group(2).strip()
+                if value.startswith('"') and value.endswith('"'):
+                    value=value[1:-1]
+                attrs[match.group(1)]=value
+        if (attrs.get("Acct-Session-Id")!=sid or attrs.get("NAS-IP-Address")!=nas
+                or normmac(attrs.get("Calling-Station-Id"))!=mac):
+            continue
+        ident=attrs.get("NAS-Identifier","").strip()
+        if not ident or len(ident)>64 or not re.fullmatch(r"[A-Za-z0-9_.:-]+",ident):
+            raise ValueError("NAS_IDENTIFIER_INVALID")
+        found.add(ident)
+    return found
+
+
 def identifier(nas,sid,mac):
-    directory=Path("/var/log/radacct")/nas
-    if not directory.is_dir():raise ValueError("ACCOUNTING_DETAIL_MISSING")
-    for offset in (0,1):
-        fn=directory/(datetime.datetime.now()-datetime.timedelta(days=offset)).strftime("detail-%Y%m%d")
-        if not fn.is_file():continue
-        size=fn.stat().st_size
-        with fn.open("rb") as fh:
-            fh.seek(max(0,size-8*1024*1024))
-            if size>8*1024*1024:fh.readline()
-            data=fh.read().decode("utf-8","replace")
-        for block in reversed(re.split(r"\r?\n\s*\r?\n",data)):
-            attrs={}
-            for line in block.splitlines():
-                m=ATTR.match(line)
-                if m:
-                    v=m.group(2).strip()
-                    if v.startswith('"') and v.endswith('"'):v=v[1:-1]
-                    attrs[m.group(1)]=v
-            if attrs.get("Acct-Session-Id")!=sid or attrs.get("NAS-IP-Address")!=nas:
-                continue
-            if normmac(attrs.get("Calling-Station-Id"))!=mac:continue
-            ident=attrs.get("NAS-Identifier","").strip()
-            if ident and len(ident)<=64 and re.fullmatch("[A-Za-z0-9_.:-]+",ident):
-                return ident
-    raise ValueError("NAS_IDENTIFIER_NOT_FOUND")
+    """Resolve identifier only for a proven NAS/SID/MAC from direct UDP or RadSec.
+
+    Both sender directories are a fixed allowlist; conflicting identifiers fail closed.
+    Detail path must never be supplied by a caller. SQLite session validation precedes
+    this call and is repeated by the forced-command entry point for every action.
+    """
+    if nas not in NAS or not isinstance(sid,str) or not SID.fullmatch(sid):
+        raise ValueError("INVALID_NAS_OR_SESSION")
+    if not re.fullmatch("[0-9a-f]{12}",mac):
+        raise ValueError("INVALID_MAC")
+    found=set()
+    dirs=(nas,RADSEC_PROXY_SRC)
+    saw_directory=False
+    for sender in dirs:
+        directory=DETAIL_ROOT/sender
+        if directory.is_symlink():
+            raise ValueError("ACCOUNTING_DETAIL_UNTRUSTED_PATH")
+        if not directory.is_dir():
+            continue
+        saw_directory=True
+        for offset in (0,1):
+            fn=directory/(datetime.datetime.now()-datetime.timedelta(days=offset)).strftime("detail-%Y%m%d")
+            found.update(_detail_identifiers(fn,nas,sid,mac))
+            if len(found)>1:
+                raise ValueError("NAS_IDENTIFIER_AMBIGUOUS")
+    if not saw_directory:
+        raise ValueError("ACCOUNTING_DETAIL_MISSING")
+    if len(found)!=1:
+        raise ValueError("NAS_IDENTIFIER_NOT_FOUND")
+    return next(iter(found))
 
 def secret_for(nas):
     text=Path(CLIENTS).read_text(encoding="utf-8")
